@@ -3,8 +3,8 @@
 # Socket Programming Tutorial
 # https://realpython.com/python-sockets/#socket-api-overview
 # TO RUN: 
-# 1. make the python file an executable chmod +x filename.py
-# 2. ./filename.py
+# 1. Execute this program in one terminal window
+# 2. In a separate terminal, Execute echo-client.py
 
 import socket
 
