@@ -18,7 +18,8 @@ class Client:
 		self.port = None
 		self.IP = None
 		self.connections = []
-		# sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.sel = None
+		self.lsock = None
 
 	# 1[chat.py] 2[name] 3[port] 4[connection:port] 5[connection:port]
 	def getInput(self):
@@ -36,8 +37,25 @@ class Client:
 			for arg in arguments:
 				arg = arg.split(':')
 				self.connections.append(arg[1])
+
+	def setupSocket(self):
+		print('Setting up listening socket:')
+		# create selector for handling blocking
+		self.sel = selectors.DefaultSelector()
+		# create listening socket and start listening
+		self.lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.lsock.bind((self.IP, self.port))
+		self.lsock.listen()
+		print('Listening on ',(self.IP, self.port))
+		self.lsock.setblocking(False)
+		self.sel.register(self.lsock, selectors.EVENT_READ, data=None)
+
 	def __str__(self):
+		print('Client Initialized:')
 		return '%s %s %s %s' % (self.name, self.port, self.IP, self.connections)
+
+class Packet:
+	pass
 
 if __name__ == "__main__":
 	# parse command line arguments
@@ -45,13 +63,10 @@ if __name__ == "__main__":
 	user.getInput()
 	print(user)
 
-	# create listening socket and start listening
-	lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	lsock.bind((user.IP, user.port))
-	lsock.listen()
-	print('Listening on ',(user.IP, user.port))
+	user.setupSocket()
+
+
 	#conn, addr = lsock.accept()
-	lsock.close()
 	'''
 	print('Connected by', addr)
 	while True:
