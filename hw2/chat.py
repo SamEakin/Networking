@@ -2,8 +2,13 @@
 # Homework 2-Q4
 # Sam Eakin
 
-''' EXECUTE THIS:
+''' EXECUTE THESE FOR TESTING:
+
+py chat.py user1 5001 127.0.0.1:5002
+py chat.py user2 5002 127.0.0.1:5001
+
 py chat.py user1 5001 127.0.0.1:5002 127.0.0.1:5003
+
 '''
 
 import sys
@@ -20,6 +25,7 @@ class Client:
 		self.connections = []
 		self.sel = None
 		self.lsock = None
+		self.message = ''
 
 	# 1[chat.py] 2[name] 3[port] 4[connection:port] 5[connection:port]
 	def getInput(self):
@@ -38,11 +44,9 @@ class Client:
 				arg = arg.split(':')
 				self.connections.append(arg[1])
 
-	def setupSocket(self):
+	def createListenSocket(self):
 		print('Setting up listening socket:')
-		# create selector for handling blocking
 		self.sel = selectors.DefaultSelector()
-		# create listening socket and start listening
 		self.lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.lsock.bind((self.IP, self.port))
 		self.lsock.listen()
@@ -50,6 +54,29 @@ class Client:
 		self.lsock.setblocking(False)
 		self.sel.register(self.lsock, selectors.EVENT_READ, data=None)
 
+	def createMessage(self):
+		print('Enter your message: ')
+		message = input()
+		message = message.encode()
+		self.message = message
+
+	def sendMessage(self):
+		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+			s.connect((self.IP, int(self.connections[0])))
+			s.sendall(self.message)
+
+	def getMessage(self):
+		conn, addr = lsock.accept() 
+		# The with statement is used with conn to automatically close the socket at the end of the block.
+		with conn:
+			print('Connected by', addr)
+			while True:
+				data = conn.recv(1024)
+				if not data:
+					break
+				print(data)
+				conn.sendall(data)
+	
 	def __str__(self):
 		print('Client Initialized:')
 		return '%s %s %s %s' % (self.name, self.port, self.IP, self.connections)
@@ -63,16 +90,18 @@ if __name__ == "__main__":
 	user.getInput()
 	print(user)
 
-	user.setupSocket()
+	user.createListenSocket()
+
+	user.createMessage()
+	print(user.message)
+
+	user.sendMessage()
 
 
-	#conn, addr = lsock.accept()
-	'''
-	print('Connected by', addr)
-	while True:
-		data = conn.recv(1024)
-		if not data:
-			break
-		conn.sendall(data)
 
-	'''
+#
+#
+#
+#
+#
+#
