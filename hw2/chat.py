@@ -4,10 +4,15 @@
 
 ''' EXECUTE THESE FOR TESTING:
 
+#### 1 to 1 connection ####
 py chat.py user1 5001 127.0.0.1:5002
 py chat.py user2 5002 127.0.0.1:5001
 
+#### multiple connection ####
+
 py chat.py user1 5001 127.0.0.1:5002 127.0.0.1:5003
+py chat.py user2 5002 127.0.0.1:5001 127.0.0.1:5003
+py chat.py user3 5003 127.0.0.1:5001 127.0.0.1:5002
 
 '''
 
@@ -19,17 +24,20 @@ HOST = '127.0.0.1' # The server's hostname or IP address
 
 class Client:
 	def __init__(self, name):
+		# System Args
 		self.name = name
 		self.port = None
 		self.IP = None
 		self.connections = []
-		self.sel = None
-		self.lsock = None # socket client will listen on.
-		self.wsock = None # socket client will send on.
+		# Communication Args
 		self.message = ''
+		self.sel = None
+		self.serverSocket = None # socket client will listen on.
+		self.writeSockets = None # sockets for each client connection
+		self.readSockets = [] # incoming connections from clients
 
 	# 1[chat.py] 2[name] 3[port] 4[connection:port] 5[connection:port]
-	def getInput(self):
+	def getInputArgs(self):
 		arg_count = len(sys.argv)
 
 		if arg_count < 3:
@@ -48,53 +56,70 @@ class Client:
 
 	def createListenSocket(self):
 		print('Setting up listening socket:')
-		self.lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.lsock.bind((self.IP, self.port))
-		self.lsock.listen()
+		self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.serverSocket.bind((self.IP, self.port))
+		self.serverSocket.listen()
 		print('Listening on ',(self.IP, self.port))
 
+	def eventLoop(self):
+		while True:
+			rlist = [self.serverSocket, sys.stdin]
+			rlist.extend(self.readSockets)
+			print('PRE SELECT')
+			rlist_out, _, _ = select.select(rlist, [], [])
+			print('POST SELECT')
+
+			for s in rlist_out:
+				if s == self.serverSocket:
+					# there is an incoming connection from a client
+					conn, addr = s.accept()
+					self.readSockets.append(conn)
+				elif s == sys.stdin:
+					self.createMessage()
+					if self.writeSockets is None:
+						self.writeSockets = self.connectToClients()
+				else:
+					# this must be a socket to read from
+					print('Receiving from ', s.fileno())
+					data = conn.recv(1024)
+					if not data:
+						print('Stopped')
+						break
+					print('Received ' , data)
+
+
+	# from class
+	def connectToClients(self):
+		for client in self.connections:
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			print('Connecting to client ', client)
+			s.connect((self.IP, client))
+			self.writeSockets.append(s)
+			print('Connected to client ', client)
+	
 	def createMessage(self):
-		print('Welcome to the Chat: ')
-		message = input()
+		message = input('Enter Message: ')
 		message = message.encode()
 		self.message = message
 
 	def sendMessage(self):
-		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-			s.connect((self.IP, self.connections[0]))
-			s.sendall(self.message)
-			#data = s.recv(1024)
-			#print ('Recieved', repr(data))
-
-	def getMessage(self):
-		self.wsock, addr = self.lsock.accept() 
-		# The with statement is used with conn to automatically close the socket at the end of the block.
-		print('Connected by', addr)
-		while True:
-			data = self.wsock.recv(1024)
-			if not data:
-				break
-			print(data)
-			self.wsock.sendall(data)
+		for socket in self.writeSockets:
+			print('Sending to ', socket.fileno())
+			socket.sendall(self.message)
 	
 	def __str__(self):
 		print('Client Initialized:')
 		return '%s %s %s %s' % (self.name, self.port, self.IP, self.connections)
 
+
 if __name__ == "__main__":
 	user = Client(sys.argv[1])
-	user.getInput()
+	user.getInputArgs()
 	print(user)
 
 	user.createListenSocket()
+	user.eventLoop()
 
-	# ---- This is where I'm stuck ---- #
-	# How do I create an event loop that will print any messages recieved
-	# over the listening socket? It also has to be waiting for any typed input to send.
-
-	user.createMessage()
-
-	user.sendMessage()
 
 
 
