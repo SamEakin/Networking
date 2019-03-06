@@ -32,7 +32,7 @@ class Client:
 		# Communication Args
 		self.sel = None
 		self.serverSocket = None # socket client will listen on.
-		self.writeSockets = None # sockets for each client connection
+		self.writeSockets = [] # sockets for each client connection
 		self.readSockets = [] # incoming connections from clients
 
 	# 1[chat.py] 2[name] 3[port] 4[connection:port] 5[connection:port]
@@ -69,32 +69,33 @@ class Client:
 			for s in rlist_out:
 				if s == self.serverSocket: # there is an incoming connection from a client
 					conn, addr = s.accept()
-					print('Accepting incoming connection')
+					print('Accepting incoming connection from', s.fileno())
 					self.readSockets.append(conn)
 				elif s == sys.stdin: # there is keyboard input to send
 					txt = input()
-					if self.writeSockets is None:
-						self.writeSockets = self.connectToClients()
+					if len(self.writeSockets) == 0:
+						self.connectToClients()
 					self.sendMessage(txt)
 				else: # this must be a socket to read from
 					#print('Receiving from ', s.fileno())
 					data = conn.recv(1024)
 					if not data:
-						#print('Stopped')
+						print('Stopped')
 						break
-					print('Received ' , data.decode())
+					print('Received ', data.decode())
 
 
 	# from class
 	def connectToClients(self):
-		self.writeSockets = []
 		for client in self.connections:
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			print('Connecting to client ', client)
 			s.connect((self.IP, client))
 			self.writeSockets.append(s)
 			print('Connected to client ', client)
-	
+		print(type(self.writeSockets))
+		print(self.writeSockets)
+
 	def createMessage(self):
 		message = input('Enter Message: ')
 		message = message.encode()
@@ -102,9 +103,9 @@ class Client:
 
 	def sendMessage(self, message):
 		message = message.encode()
-		for socket in self.writeSockets:
-			print('Sending to ', socket.fileno())
-			socket.sendall(message)
+		for s in self.writeSockets:
+			print('Sending to ', s.fileno())
+			s.sendall(message)
 	
 	def __str__(self):
 		print('Client Initialized:')
