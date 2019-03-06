@@ -81,6 +81,7 @@ class Client:
 					data = conn.recv(1024)
 					if not data:
 						print('Stopped')
+						s.close()
 						break
 					print('Received ', data.decode())
 
@@ -93,8 +94,6 @@ class Client:
 			s.connect((self.IP, client))
 			self.writeSockets.append(s)
 			print('Connected to client ', client)
-		print(type(self.writeSockets))
-		print(self.writeSockets)
 
 	def createMessage(self):
 		message = input('Enter Message: ')
