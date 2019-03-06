@@ -30,7 +30,6 @@ class Client:
 		self.IP = None
 		self.connections = []
 		# Communication Args
-		self.message = ''
 		self.sel = None
 		self.serverSocket = None # socket client will listen on.
 		self.writeSockets = None # sockets for each client connection
@@ -65,31 +64,30 @@ class Client:
 		while True:
 			rlist = [self.serverSocket, sys.stdin]
 			rlist.extend(self.readSockets)
-			print('PRE SELECT')
 			rlist_out, _, _ = select.select(rlist, [], [])
-			print('POST SELECT')
 
 			for s in rlist_out:
-				if s == self.serverSocket:
-					# there is an incoming connection from a client
+				if s == self.serverSocket: # there is an incoming connection from a client
 					conn, addr = s.accept()
+					print('Accepting incoming connection')
 					self.readSockets.append(conn)
-				elif s == sys.stdin:
-					self.createMessage()
+				elif s == sys.stdin: # there is keyboard input to send
+					txt = input()
 					if self.writeSockets is None:
 						self.writeSockets = self.connectToClients()
-				else:
-					# this must be a socket to read from
-					print('Receiving from ', s.fileno())
+					self.sendMessage(txt)
+				else: # this must be a socket to read from
+					#print('Receiving from ', s.fileno())
 					data = conn.recv(1024)
 					if not data:
-						print('Stopped')
+						#print('Stopped')
 						break
-					print('Received ' , data)
+					print('Received ' , data.decode())
 
 
 	# from class
 	def connectToClients(self):
+		self.writeSockets = []
 		for client in self.connections:
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			print('Connecting to client ', client)
@@ -102,10 +100,11 @@ class Client:
 		message = message.encode()
 		self.message = message
 
-	def sendMessage(self):
+	def sendMessage(self, message):
+		message = message.encode()
 		for socket in self.writeSockets:
 			print('Sending to ', socket.fileno())
-			socket.sendall(self.message)
+			socket.sendall(message)
 	
 	def __str__(self):
 		print('Client Initialized:')
