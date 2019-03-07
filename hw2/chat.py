@@ -15,7 +15,7 @@ py chat.py user2 5002 127.0.0.1:5001 127.0.0.1:5003
 py chat.py user3 5003 127.0.0.1:5001 127.0.0.1:5002
 
 '''
-
+import json
 import sys
 import socket
 import select
@@ -28,8 +28,9 @@ class Client:
 		self.name = name
 		self.port = None
 		self.IP = None
-		self.connections = []
+		self.connections = [] # port numbers to connect to
 		# Communication Args
+		self.seq = 0 # message sequence number 
 		self.sel = None
 		self.serverSocket = None # socket client will listen on.
 		self.writeSockets = [] # sockets for each client connection
@@ -95,16 +96,32 @@ class Client:
 			self.writeSockets.append(s)
 			print('Connected to client ', client)
 
-	def createMessage(self):
-		message = input('Enter Message: ')
-		message = message.encode()
-		self.message = message
-
 	def sendMessage(self, message):
+		if message == 'exit':
+			self.closeConnection()
+			sys.exit(-1)
+		message = self.createJSON(message)
 		message = message.encode()
+		print(message)
 		for s in self.writeSockets:
 			print('Sending to ', s.fileno())
 			s.sendall(message)
+
+	# {"seq": 0, "user": "user1", "message": "hello"}
+	def createJSON(self, message):
+		message = json.dumps({'seq': self.seq, 'user': self.name, 'message': message})
+		print(message)
+		self.seq += 1
+		return message
+
+	# Works but it breaks the other connections if one leaves.
+	def closeConnection(self):
+		for s in self.writeSockets:
+			s.close()
+		for s in self.readSockets:
+			s.close()
+		self.serverSocket.close()
+		print('All connections terminated. Goodbye.')
 	
 	def __str__(self):
 		print('Client Initialized:')
