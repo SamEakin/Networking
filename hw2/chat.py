@@ -12,15 +12,16 @@ py chat.py user2 5002 127.0.0.1:5001
 
 py chat.py user1 5001 127.0.0.1:5002 127.0.0.1:5003
 py chat.py user2 5002 127.0.0.1:5001 127.0.0.1:5003
-py chat.py user3 5003 127.0.0.1:5001 127.0.0.1:5002
+py chat.py user3 5003 127.0.0.1:5001
 
 '''
+
 import json
 import sys
 import socket
 import select
 
-HOST = '127.0.0.1' # The server's hostname or IP address
+HOST = '127.0.0.1' # LOCALHOST is used for all connections
 
 class Client:
 	def __init__(self, name):
@@ -82,11 +83,10 @@ class Client:
 					if not data:
 						print('Stopped')
 						s.close()
-						# remove read sockets
-						self.readSockets.remove(s)
+						self.readSockets.remove(s) # remove read sockets
 					else:
 						print('Received ', data.decode())
-
+						self.unpackJSON(data.decode())
 
 	# from class
 	def connectToClients(self):
@@ -111,9 +111,16 @@ class Client:
 	# {"seq": 0, "user": "user1", "message": "hello"}
 	def createJSON(self, message):
 		message = json.dumps({'seq': self.seq, 'user': self.name, 'message': message})
-		print(message)
 		self.seq += 1
 		return message
+
+	def unpackJSON(self, JSONmessage):
+		message = json.loads(JSONmessage)
+		data = []
+		for key,value in message.items():
+			data.append(value)
+		print('%s: %s' % (data[1], data[2]))
+
 
 	def closeConnection(self):
 		for s in self.writeSockets:
@@ -135,11 +142,6 @@ if __name__ == "__main__":
 
 	user.createListenSocket()
 	user.eventLoop()
-
-
-
-
-#
 #
 #
 #
