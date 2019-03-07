@@ -78,13 +78,14 @@ class Client:
 						self.connectToClients()
 					self.sendMessage(txt)
 				else: # this must be a socket to read from
-					#print('Receiving from ', s.fileno())
 					data = conn.recv(1024)
 					if not data:
 						print('Stopped')
 						s.close()
-						break
-					print('Received ', data.decode())
+						# remove read sockets
+						self.readSockets.remove(s)
+					else:
+						print('Received ', data.decode())
 
 
 	# from class
@@ -114,7 +115,6 @@ class Client:
 		self.seq += 1
 		return message
 
-	# Works but it breaks the other connections if one leaves.
 	def closeConnection(self):
 		for s in self.writeSockets:
 			s.close()
