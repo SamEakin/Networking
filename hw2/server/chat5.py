@@ -56,17 +56,14 @@ class Client:
 		print('Listening on ', self.listenSocket)
 
 	def eventLoop(self):
+		# send the subscribe command
 		while True:
-			rlist = [self.listenSocket, sys.stdin]
+			rlist = [sys.stdin]
 			rlist.extend(self.readSockets)
 			rlist_out, _, _ = select.select(rlist, [], [])
 
-			for s in rlist_out:
-				if s == self.listenSocket: # there is an incoming connection from a client
-					conn, addr = s.accept()
-					print('Accepting incoming connection from', s.fileno())
-					self.readSockets.append(conn)
-				elif s == sys.stdin: # there is keyboard input to send
+			for s in rlist_out:				
+				if s == sys.stdin: # there is keyboard input to send
 					txt = input()
 					if len(self.serverSocket) == 0:
 						self.connectToServer()
@@ -133,7 +130,6 @@ if __name__ == "__main__":
 	user.getInputArgs()
 	print(user)
 
-	user.createListenSocket()
 	user.eventLoop()
 #
 #
