@@ -5,7 +5,7 @@
 ''' 
 EXECUTE THIS TO RUN SERVER:
 
-py server5.py server 5001
+py server5.py 127.0.0.1:5001
 
 '''
 import json
@@ -13,14 +13,11 @@ import sys
 import socket
 import select
 
-HOST = '127.0.0.1' # LOCALHOST is used for all connections
-
 class Server:
 	def __init__(self, name):
 		# System Args
-		self.name = name
-		self.port = None
 		self.IP = None
+		self.port = None
 		self.connections = [] # port numbers to connect to
 		# Communication Args
 		self.seq = 0 # message sequence number 
@@ -32,16 +29,15 @@ class Server:
 	# [server5.py][name][port]
 	def getInputArgs(self):
 		arg_count = len(sys.argv)
-
 		if arg_count < 2:
 			print("Not enough arguments!")
 			sys.exit(-1)
-		elif arg_count == 2:
-			print("Please enter port!")
+		elif arg_count == 1:
+			print("Please enter IP:PORT!")
 		else:
-			self.name = sys.argv[1]
-			self.port = int(sys.argv[2])
-			self.IP = HOST
+			inputArg = sys.argv[1].split(':')
+			self.IP = inputArg[0]
+			self.port = int(inputArg[1])
 
 	def createListenSocket(self):
 		print('Setting up Server Socket:')
@@ -60,7 +56,6 @@ class Server:
 			print('Connected to client ', client)
 
 	def sendMessage(self, message):
-		print(message)
 		for s in self.writeSockets:
 			print('Sending to ', s.fileno())
 			s.sendall(message)
@@ -80,7 +75,7 @@ class Server:
 				else: # this must be a client's socket to read from
 					data = conn.recv(1024)
 					if not data:
-						print('%s closed the connection.', s.fileno())
+						print('Client closed the connection:', addr)
 						s.close()
 						self.clientSockets.remove(s) # remove read sockets
 					else:
