@@ -37,8 +37,7 @@ class Client:
 		self.writeSockets = [] # sockets for each client connection
 		self.readSockets = [] # incoming connections from clients
 
-	# 1[chat.py] 2[name] 3[port] 4[connection:port] 5[connection:port]
-	def getInputArgs(self):
+	def getInputArgs(self): # 1[chat.py] 2[name] 3[port] 4[connection:port] 5[connection:port]
 		arg_count = len(sys.argv)
 
 		if arg_count < 3:
@@ -56,11 +55,10 @@ class Client:
 				self.connections.append(int(arg[1]))
 
 	def createListenSocket(self):
-		print('Setting up listening socket:')
 		self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.serverSocket.bind((self.IP, self.port))
 		self.serverSocket.listen()
-		print('Listening on ',(self.IP, self.port))
+		print('Listening on ', self.IP ,self.port)
 
 	def eventLoop(self):
 		while True:
@@ -71,7 +69,7 @@ class Client:
 			for s in rlist_out:
 				if s == self.serverSocket: # there is an incoming connection from a client
 					conn, addr = s.accept()
-					print('Accepting incoming connection from', s.fileno())
+					#print('Accepting incoming connection from', s.fileno())
 					self.readSockets.append(conn)
 				elif s == sys.stdin: # there is keyboard input to send
 					txt = input()
@@ -81,21 +79,19 @@ class Client:
 				else: # this must be a socket to read from
 					data = conn.recv(1024)
 					if not data:
-						print('Stopped')
+						print('Client Disconnected.')
 						s.close()
 						self.readSockets.remove(s) # remove read sockets
 					else:
-						print('Received ', data.decode())
+						#print('Received ', data.decode())
 						self.unpackJSON(data.decode())
 
-	# from class
-	def connectToClients(self):
+	def connectToClients(self): # from class
 		for client in self.connections:
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			print('Connecting to client ', client)
 			s.connect((self.IP, client))
 			self.writeSockets.append(s)
-			print('Connected to client ', client)
+			#print('Connected to client ', client)
 
 	def sendMessage(self, message):
 		if message == 'exit':
@@ -103,13 +99,11 @@ class Client:
 			sys.exit(-1)
 		message = self.createJSON(message)
 		message = message.encode()
-		print(message)
 		for s in self.writeSockets:
-			print('Sending to ', s.fileno())
+			#print('Sending to ', s.fileno())
 			s.sendall(message)
 
-	# {"seq": 0, "user": "user1", "message": "hello"}
-	def createJSON(self, message):
+	def createJSON(self, message): # {"seq": 0, "user": "user1", "message": "hello"}
 		message = json.dumps({'seq': self.seq, 'user': self.name, 'message': message})
 		self.seq += 1
 		return message
@@ -134,11 +128,9 @@ class Client:
 		print('Client Initialized:')
 		return '%s %s %s %s' % (self.name, self.port, self.IP, self.connections)
 
-
 if __name__ == "__main__":
 	user = Client(sys.argv[1])
 	user.getInputArgs()
-	print(user)
 
 	user.createListenSocket()
 	user.eventLoop()
