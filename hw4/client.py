@@ -11,8 +11,6 @@ import types
 import socket
 import selectors
 
-messages = [b'Message 1 from client.', b'Message 2 from client.']
-
 # [client.py] [name] [IP:port] [server]
 def getInputArgs():
 	arg_count = len(sys.argv)
@@ -49,26 +47,36 @@ def service_connection(key, mask):
     if mask & selectors.EVENT_READ:
         recv_data = sock.recv(1024)  # Should be ready to read
         if recv_data:
-            print('received', repr(recv_data), 'from connection', data.connid)
+            print('received', repr(recv_data), 'from connection')
             data.recv_total += len(recv_data)
         if not recv_data or data.recv_total == data.msg_total:
-            print('closing connection', data.connid)
+            print('closing connection')
             sel.unregister(sock)
             sock.close()
     if mask & selectors.EVENT_WRITE:
         if not data.outb and data.messages:
             data.outb = data.messages.pop(0)
         if data.outb:
-            print('sending', repr(data.outb), 'to connection', data.connid)
+            print('sending', repr(data.outb), 'to connection')
             sent = sock.send(data.outb)  # Should be ready to write
             data.outb = data.outb[sent:]
 
 
 ###########################################################
+messages = [b'Message 1 from client.', b'Message 2 from client.']
+
 sel = selectors.DefaultSelector()
 # ...
 client_IP, client_port, server_IP, server_port = getInputArgs()
 start_connection(server_IP, server_port)
+
+while True:
+    events = sel.select(timeout=None)
+    for key, mask in events:
+        if key.data is None:
+            pass
+        else:
+            service_connection(key, mask)
 
 
 
