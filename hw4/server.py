@@ -3,7 +3,12 @@
 # Sam Eakin
 # 4/8/19
 
+'''
+python server.py 127.0.0.1:8000
+'''
+
 import sys
+import types
 import socket
 import selectors
 
@@ -47,8 +52,6 @@ def service_connection(key, mask):
             data.outb = data.outb[sent:]
 
 ##########################
-#host = '127.0.0.1'
-#port = 8000
 
 sel = selectors.DefaultSelector()
 # ...
