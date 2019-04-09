@@ -51,9 +51,11 @@ def service_connection(key, mask):
 			sock.close()
 	if mask & selectors.EVENT_WRITE:
 		if data.outb:
-			process_http_header(sock, data.outb)
+			filedata = process_http_header(sock, data.outb)
 			#print('echoing', repr(data.outb), 'to', data.addr)
-			sent = sock.send(data.outb)  # Should be ready to write
+			#sent = sock.send(data.outb)  # Should be ready to write
+			filedata = create_header(filedata)
+			sent = sock.send(filedata.encode())
 			data.outb = data.outb[sent:]
 
 def process_http_header(socket, data):
@@ -74,12 +76,17 @@ def process_http_header(socket, data):
 
 	valid_request = check_bad_request(request_item)
 	file_exists = check_file_exist(request_item)
+	return file_exists
+
+def create_header(data):
+	header = 'HTTP/1.1 200 OK \r\nContent-Type:text/html\r\n\r\n'
+	return header+data
 
 def check_file_exist(request):
 	URL = 'static/' + request[1]
-	file = open(URL)
-	print(file.read())
-	return file
+	with open(URL) as file:
+		filedata = file.read()
+		return filedata
 
 
 def check_bad_request(request):
