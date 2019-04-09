@@ -60,20 +60,42 @@ def process_http_header(socket, data):
 	header = str(data.decode())
 	#print(header)
 	header_items = header.split('\r\n')
-	request_item = header_items[0]
-	host_item = header_items[1]
-	request_item = request_item.split(' ')
-	host_item = host_item.split(': ')
-
+	request_item = header_items[0].split(' ')
+	host_item = header_items[1].split(': ')
 	host = host_item[1]
+
 	print("****REQUEST****")
 	print(request_item)
 	print("****URI****")
 	print(host)
 
-def print_items(stuff):
-	for item in stuff:
-		print(item)
+	# testing a bad request
+	bad_request = ['GET','/car.html','HTTP/1.0']
+
+	valid_request = check_bad_request(request_item)
+	file_exists = check_file_exist(request_item)
+
+def check_file_exist(request):
+	URL = 'static/' + request[1]
+	file = open(URL)
+	print(file.read())
+	return file
+
+
+def check_bad_request(request):
+	if request[0] != 'GET':
+		print('Error: Invalid GET')
+		return False
+	if type(request[1]) != str:
+		print('Error: Invalid URI')
+		return False
+	if request[2] != 'HTTP/1.1':
+		print('Error: Invalid HTTP version')
+		return False
+	else:
+		print('Valid Request!')
+		return True
+
 
 ##########################
 
