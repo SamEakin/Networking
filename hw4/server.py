@@ -33,7 +33,6 @@ def getInputArgs():
 def accept_wrapper(sock):
 	conn, addr = sock.accept()  # Should be ready to read
 	print('accepted connection from', addr)
-	conn.setblocking(False)
 	data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'')
 	events = selectors.EVENT_READ | selectors.EVENT_WRITE
 	sel.register(conn, events, data=data)
@@ -51,42 +50,51 @@ def service_connection(key, mask):
 			sock.close()
 	if mask & selectors.EVENT_WRITE:
 		if data.outb:
-			filedata = process_http_header(sock, data.outb)
-			#print('echoing', repr(data.outb), 'to', data.addr)
-			#sent = sock.send(data.outb)  # Should be ready to write
-			filedata = create_header(filedata)
-			sent = sock.send(filedata.encode())
-			data.outb = data.outb[sent:]
+			file = process_http_header(sock, data.outb)
+			data.outb = file.encode()
+			while len(data.outb) > 0:
+				print('Sending file to client.')
+				sent = sock.send(data.outb)
+				data.outb = data.outb[sent:]
+			sel.unregister(sock)
+			print('closing connection to', data.addr)
+			sock.close()
+
 
 def process_http_header(socket, data):
 	header = str(data.decode())
-	#print(header)
 	header_items = header.split('\r\n')
 	request_item = header_items[0].split(' ')
 	host_item = header_items[1].split(': ')
 	host = host_item[1]
-
 	print("****REQUEST****")
 	print(request_item)
 	print("****URI****")
 	print(host)
-
-	# testing a bad request
-	bad_request = ['GET','/car.html','HTTP/1.0']
-
+	# bad_request = ['GET','/car.html','HTTP/1.0'] # testing a bad request
 	valid_request = check_bad_request(request_item)
-	file_exists = check_file_exist(request_item)
-	return file_exists
+	filedata = check_file_exist(request_item)
+	file = create_header(filedata)
+
+	return file
 
 def create_header(data):
-	header = 'HTTP/1.1 200 OK \r\nContent-Type:text/html\r\n\r\n'
-	return header+data
+	if data == 'File Not Found!':
+		header = 'HTTP/1.1 404 ERROR \r\nContent-Type:text/html\r\n\r\n'
+		return header
+	else:
+		header = 'HTTP/1.1 200 OK \r\nContent-Type:text/html\r\n\r\n'
+		return header+data
 
 def check_file_exist(request):
 	URL = 'static/' + request[1]
-	with open(URL) as file:
-		filedata = file.read()
-		return filedata
+	try:
+		with open(URL) as file:
+			filedata = file.read()
+			return filedata
+	except FileNotFoundError:
+		print('File Not Found!')
+		return 'File Not Found!'
 
 
 def check_bad_request(request):
@@ -100,7 +108,7 @@ def check_bad_request(request):
 		print('Error: Invalid HTTP version')
 		return False
 	else:
-		print('Valid Request!')
+		print('Valid Request.')
 		return True
 
 
