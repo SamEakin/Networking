@@ -50,10 +50,10 @@ def service_connection(key, mask):
 			sock.close()
 	if mask & selectors.EVENT_WRITE:
 		if data.outb:
-			file = process_http_header(sock, data.outb)
+			file = process_http_header(data.outb) # I am passing the data from the socket
 			data.outb = file.encode()
 			while len(data.outb) > 0:
-				print('Sending file to client.')
+				print('Sending to client.')
 				sent = sock.send(data.outb)
 				data.outb = data.outb[sent:]
 			sel.unregister(sock)
@@ -61,15 +61,13 @@ def service_connection(key, mask):
 			sock.close()
 
 
-def process_http_header(socket, data):
+def process_http_header(data):
 	header = str(data.decode())
 	header_items = header.split('\r\n')
 	request_item = header_items[0].split(' ')
 	host_item = header_items[1].split(': ')
 	host = host_item[1]
-	print("****REQUEST****")
 	print(request_item)
-	print("****URI****")
 	print(host)
 	# bad_request = ['GET','/car.html','HTTP/1.0'] # testing a bad request
 	valid_request = check_bad_request(request_item)
