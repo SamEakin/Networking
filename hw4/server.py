@@ -78,7 +78,7 @@ def process_http_header(data):
 
 def create_header(data):
 	if data == 'File Not Found!':
-		header = 'HTTP/1.1 404 ERROR \r\nContent-Type:text/html\r\n\r\n'
+		header = 'HTTP/1.1 404 Not Found \r\nContent-Type:text/html\r\n\r\n'
 		return header
 	else:
 		header = 'HTTP/1.1 200 OK \r\nContent-Type:text/html\r\n\r\n'
