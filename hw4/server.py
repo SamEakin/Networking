@@ -69,16 +69,19 @@ def process_http_header(data):
 	host = host_item[1]
 	print(request_item)
 	print(host)
-	# bad_request = ['GET','/car.html','HTTP/1.0'] # testing a bad request
+	bad_request = ['GET','/car.html','HTTP/1.0'] # testing a bad request with wrong HTTP version
 	valid_request = check_bad_request(request_item)
 	filedata = check_file_exist(request_item)
-	file = create_header(filedata)
+	file = create_header(filedata, valid_request)
 
 	return file
 
-def create_header(data):
+def create_header(data, valid_request):
 	if data == 'File Not Found!':
 		header = 'HTTP/1.1 404 Not Found \r\nContent-Type:text/html\r\n\r\n'
+		return header
+	if valid_request == False:
+		header = 'HTTP/1.1 400 Bad Request \r\nContent-Type:text/html\r\n\r\n'
 		return header
 	else:
 		header = 'HTTP/1.1 200 OK \r\nContent-Type:text/html\r\n\r\n'
@@ -109,7 +112,6 @@ def check_bad_request(request):
 		print('Valid Request.')
 		return True
 
-
 ##########################
 
 sel = selectors.DefaultSelector()
@@ -129,6 +131,5 @@ while True:
 			accept_wrapper(key.fileobj)
 		else:
 			service_connection(key, mask)
-
 
 
